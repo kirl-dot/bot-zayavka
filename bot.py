@@ -15,8 +15,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 # =============================================
 # ⚙️ НАСТРОЙКИ — ИЗМЕНИ ЭТО
 # =============================================
-BOT_TOKEN = "ВСТАВЬ_ТОКЕН_БОТА_СЮДА"       # Токен от @BotFather
-ADMIN_ID = 123456789                         # Твой Telegram ID (узнай у @userinfobot)
+BOT_TOKEN = "8710179420:AAHvhAvT4jLHDPD9pntKeEdtV5VjBTLyZ5E"       # Токен от @BotFather
+ADMIN_ID = 7027511136                        # Твой Telegram ID (узнай у @userinfobot)
 # =============================================
 
 logging.basicConfig(level=logging.INFO)
