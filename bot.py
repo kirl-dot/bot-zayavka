@@ -1,11 +1,11 @@
 import asyncio
 import logging
+import os
 from datetime import datetime
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import (
     Message, CallbackQuery,
     InlineKeyboardMarkup, InlineKeyboardButton,
-    ReplyKeyboardMarkup, KeyboardButton
 )
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
@@ -13,17 +13,16 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
 # =============================================
-# ⚙️ НАСТРОЙКИ — ИЗМЕНИ ЭТО
+# ⚙️ НАСТРОЙКИ
 # =============================================
-BOT_TOKEN = "8710179420:AAHvhAvT4jLHDPD9pntKeEdtV5VjBTLyZ5E"       # Токен от @BotFather
-ADMIN_ID = 7027511136                        # Твой Telegram ID (узнай у @userinfobot)
+BOT_TOKEN = os.getenv("BOT_TOKEN", "ВСТАВЬ_ТОКЕН_СЮДА")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "123456789"))
 # =============================================
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
 
-# Хранилище заявок
 applications: dict = {}
 app_counter = 0
 
@@ -56,7 +55,14 @@ ROLE_DESCRIPTIONS = {
 
 ROLE_HINTS = {
     "tiktok": (
-
+        "📋 <b>Формат заполнения анкеты для ТикТокера:</b>\n\n"
+        "• Имя — твоё реальное имя или псевдоним\n"
+        "• Ник в Майнкрафт — точный никнейм\n"
+        "• Возраст — полных лет\n"
+        "• Опыт — есть ли у тебя TikTok канал? Сколько подписчиков?\n"
+        "• Почему ты? — почему хочешь стать ТикТокером нашего сервера\n"
+        "• Доп. инфо — ссылка на канал или любая доп. информация\n\n"
+        "Заполняй честно — это влияет на решение! 👇"
     ),
     "youtube": (
         "📋 <b>Формат заполнения анкеты для Ютюбера:</b>\n\n"
@@ -76,16 +82,6 @@ ROLE_HINTS = {
         "• Опыт — был ли ты модератором раньше? Где?\n"
         "• Почему ты? — почему именно ты должен стать модератором\n"
         "• Доп. инфо — сколько часов в день можешь уделять серверу\n\n"
-        "Заполняй честно — это влияет на решение! 👇"
-    ),
-    "player": (
-        "📋 <b>Формат заполнения анкеты для Игрока:</b>\n\n"
-        "• Имя — твоё реальное имя или псевдоним\n"
-        "• Ник в Майнкрафт — точный никнейм\n"
-        "• Возраст — полных лет\n"
-        "• Опыт — как давно играешь в Майнкрафт?\n"
-        "• Почему ты? — почему хочешь играть на нашем сервере\n"
-        "• Доп. инфо — откуда узнал о сервере, есть ли друзья тут\n\n"
         "Заполняй честно — это влияет на решение! 👇"
     ),
     "custom": (
@@ -114,7 +110,6 @@ def role_keyboard():
         [InlineKeyboardButton(text="🎵 ТикТокер", callback_data="role_tiktok")],
         [InlineKeyboardButton(text="🎬 Ютюбер", callback_data="role_youtube")],
         [InlineKeyboardButton(text="🛡 Модератор", callback_data="role_moderator")],
-        [InlineKeyboardButton(text="⚔️ Игрок", callback_data="role_player")],
         [InlineKeyboardButton(text="✨ Своя специальность", callback_data="role_custom")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back_main")],
     ])
@@ -163,7 +158,6 @@ async def about_bot(call: CallbackQuery):
         "🎵 <b>ТикТокер</b> — снимаешь видосы про сервер в TikTok\n"
         "🎬 <b>Ютюбер</b> — ведёшь YouTube канал о сервере\n"
         "🛡 <b>Модератор</b> — следишь за порядком на сервере\n"
-        "⚔️ <b>Игрок</b> — хочешь стать частью нашего сообщества\n"
         "✨ <b>Своя специальность</b> — есть другое предложение? Напиши!\n\n"
         "Нажми <b>«Подать заявку»</b> и следуй инструкциям 🚀",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
@@ -304,16 +298,14 @@ async def fill_why(message: Message, state: FSMContext):
 @dp.message(ApplicationForm.filling_extra)
 async def fill_extra(message: Message, state: FSMContext):
     global app_counter
-    data = await state.get_data()
     await state.update_data(extra=message.text.strip())
     data = await state.get_data()
 
     app_counter += 1
     app_id = app_counter
-    role = data.get("role", "player")
+    role = data.get("role", "custom")
     role_display = data.get("custom_role_name", ROLE_DESCRIPTIONS.get(role, role))
 
-    # Сохраняем заявку
     applications[app_id] = {
         "id": app_id,
         "user_id": message.from_user.id,
@@ -333,7 +325,6 @@ async def fill_extra(message: Message, state: FSMContext):
 
     await state.clear()
 
-    # Подтверждение пользователю
     await message.answer(
         f"✅ <b>Заявка #{app_id} отправлена!</b>\n\n"
         f"Роль: <b>{role_display}</b>\n"
@@ -344,7 +335,6 @@ async def fill_extra(message: Message, state: FSMContext):
         parse_mode="HTML"
     )
 
-    # Отправка в админ-панель
     app = applications[app_id]
     admin_text = (
         f"📨 <b>НОВАЯ ЗАЯВКА #{app_id}</b>\n"
@@ -401,7 +391,7 @@ async def admin_panel(message: Message):
     )
 
 # =============================================
-# СПИСОК ЗАЯВОК (для админа)
+# СПИСОК ЗАЯВОК
 # =============================================
 async def send_app_list(call: CallbackQuery, filter_status: str = None, title: str = "Все заявки"):
     if call.from_user.id != ADMIN_ID:
@@ -529,7 +519,6 @@ async def accept_application(call: CallbackQuery):
 
     app["status"] = "accepted"
 
-    # Уведомление пользователю
     try:
         await bot.send_message(
             app["user_id"],
